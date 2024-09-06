@@ -1,9 +1,16 @@
+import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.Comparator;
+import java.util.function.Supplier;
 
-class Contract {
+abstract class BaseModel {
+    public abstract void displayInfo();
+}
+
+class Contract extends BaseModel {
     private String label;
     private double amount;
     private Date startDate;
@@ -38,8 +45,9 @@ class Contract {
         this.startDate = startDate;
     }
 
-    public void displayContractDetails() {
-        System.out.println("Contract Number: " + this.getLabel());
+    @Override
+    public void displayInfo() {
+        System.out.println("Contract label: " + this.getLabel());
         System.out.println("Amount: " + this.getAmount());
         System.out.println("Start Date: " + this.getStartDate());
     }
@@ -54,7 +62,7 @@ class Contract {
     }
 }
 
-class Control {
+class Control extends BaseModel {
     private String controlledBy;
     private int priority;
     private boolean isActive;
@@ -89,7 +97,8 @@ class Control {
         this.isActive = isActive;
     }
 
-    public void displayControlInfo() {
+    @Override
+    public void displayInfo() {
         System.out.println("Control ID: " + this.getControlledBy());
         System.out.println("Priority: " + this.getPriority());
         System.out.println("Active: " + this.isActive());
@@ -105,7 +114,7 @@ class Control {
     }
 }
 
-class Country {
+class Country extends BaseModel {
     private String name;
     private int population;
     private double area;
@@ -140,7 +149,8 @@ class Country {
         this.area = area;
     }
 
-    public void displayCountryInfo() {
+    @Override
+    public void displayInfo() {
         System.out.println("Country Name: " + this.getName());
         System.out.println("Population: " + this.getPopulation());
         System.out.println("Area: " + this.getArea() + " sq km");
@@ -157,59 +167,132 @@ class Country {
     }
 }
 
+class Utils {
+    public static <T extends BaseModel> void handleInputAndFindMaxMin(
+            Supplier<T> inputSupplier,
+            Comparator<T> comparator,
+            Class<T> clazz
+    ) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter the number of elements:");
+        int count = scanner.nextInt();
+        scanner.nextLine();
+
+        @SuppressWarnings("unchecked")
+        T[] elements = (T[]) Array.newInstance(clazz, count);
+
+        for (int i = 0; i < count; i++) {
+            elements[i] = inputSupplier.get();
+        }
+
+        T maxElement = findMax(elements, comparator);
+        T minElement = findMin(elements, comparator);
+
+        System.out.println("\nElements Information:");
+        for (T element : elements) {
+            element.displayInfo();
+        }
+
+        System.out.println("\nElement with max value:");
+        maxElement.displayInfo();
+
+        System.out.println("\nElement with min value:");
+        minElement.displayInfo();
+    }
+
+    public static <T> T findMax(T[] array, Comparator<T> comparator) {
+        T max = array[0];
+        for (T item : array) {
+            if (comparator.compare(item, max) > 0) {
+                max = item;
+            }
+        }
+        return max;
+    }
+
+    public static <T> T findMin(T[] array, Comparator<T> comparator) {
+        T min = array[0];
+        for (T item : array) {
+            if (comparator.compare(item, min) < 0) {
+                min = item;
+            }
+        }
+        return min;
+    }
+}
+
 
 public class Main2 {
 
     public static void main(String[] args) {
+        Utils.handleInputAndFindMaxMin(
+                Main2::inputContract,
+                Comparator.comparingDouble(Contract::getAmount),
+                Contract.class
+        );
+
+        Utils.handleInputAndFindMaxMin(
+                Main2::inputControl,
+                Comparator.comparingInt(Control::getPriority),
+                Control.class
+        );
+
+        Utils.handleInputAndFindMaxMin(
+                Main2::inputCountry,
+                Comparator.comparingInt(Country::getPopulation),
+                Country.class
+        );
+
+    }
+
+    private static Contract inputContract() {
         Scanner scanner = new Scanner(System.in);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-        Contract contract = new Contract(null, 0, new Date());
-
-        // Input and display Contract
-        System.out.println("Enter Contract Number:");
-        contract.setLabel(scanner.nextLine());
+        System.out.println("Enter Contract label:");
+        String label = scanner.nextLine();
         System.out.println("Enter Amount:");
-        contract.setAmount(scanner.nextDouble());
+        double amount = scanner.nextDouble();
         System.out.println("Enter Start Date (yyyy-MM-dd):");
-        String dateString = scanner.next();
+        scanner.nextLine(); // Consume newline
+        String dateString = scanner.nextLine();
+        Date startDate = null;
         try {
-            contract.setStartDate(sdf.parse(dateString));
+            startDate = sdf.parse(dateString);
         } catch (ParseException e) {
             System.out.println("Invalid date format. Please use yyyy-MM-dd.");
             System.exit(1);
         }
 
+        return new Contract(label, amount, startDate);
+    }
 
-        contract.displayContractDetails();
+    private static Control inputControl() {
+        Scanner scanner = new Scanner(System.in);
 
-        // Input and display Control
-        Control control = new Control(null, 0, false);
-        
-        scanner.nextLine();
-        System.out.println("Enter Controlled by:");
-        control.setControlledBy(scanner.nextLine());
+        System.out.println("Enter Control ID:");
+        String controlId = scanner.nextLine();
         System.out.println("Enter Priority:");
-        control.setPriority(scanner.nextInt());
+        int priority = scanner.nextInt();
         System.out.println("Is Active (true/false):");
-        control.setActive(scanner.nextBoolean());
+        boolean isActive = scanner.nextBoolean();
+        scanner.nextLine(); // Consume newline
 
-        control.displayControlInfo();
-        System.out.println(control.getControlledBy());
+        return new Control(controlId, priority, isActive);
+    }
 
+    private static Country inputCountry() {
+        Scanner scanner = new Scanner(System.in);
 
-        Country country = new Country(null, 0, 0);
-        
-        scanner.nextLine();
         System.out.println("Enter Country Name:");
-        country.setName(scanner.nextLine());
+        String name = scanner.nextLine();
         System.out.println("Enter Population:");
-        country.setPopulation(scanner.nextInt());
+        int population = scanner.nextInt();
         System.out.println("Enter Area (sq km):");
-        country.setArea(scanner.nextDouble());
+        double area = scanner.nextDouble();
+        scanner.nextLine();
 
-        country.displayCountryInfo();
-
-        scanner.close();
+        return new Country(name, population, area);
     }
 }
