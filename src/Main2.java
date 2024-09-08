@@ -4,174 +4,128 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.Comparator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-abstract class BaseModel {
-    public abstract void displayInfo();
+abstract static class BaseModel {
+    private final int id;
+
+    public int id() {
+        return this.id;
+    }
+
+    public BaseModel(int id) {
+        this.id = id;
+    }
+
+    public abstract String toString();
 }
 
-class Contract extends BaseModel {
-    private String label;
-    private double amount;
-    private Date startDate;
+static class Contract extends BaseModel {
+    public String label;
+    public double amount;
+    public Date startDate;
 
-    public Contract(String label, double amount, Date startDate) {
+    public Contract(int id, String label, double amount, Date startDate) {
+        super(id);
         this.label = label;
         this.amount = amount;
         this.startDate = startDate;
-    }
-
-    public String getLabel() {
-        return this.label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public double getAmount() {
-        return this.amount;
-    }
-
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
-    public Date getStartDate() {
-        return this.startDate;
-    }
-
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
-    }
-
-    @Override
-    public void displayInfo() {
-        System.out.println("Contract label: " + this.getLabel());
-        System.out.println("Amount: " + this.getAmount());
-        System.out.println("Start Date: " + this.getStartDate());
     }
 
     public boolean isStarted() {
         return startDate.after(new Date());
     }
 
-    public void extendContract(Date newEndDate) {
-        // Assuming end date is another field, this is just a placeholder.
-        System.out.println("Contract extended to: " + newEndDate);
+    public double getAmount() {
+        return this.amount;
+    }
+
+    @Override
+    public String toString() {
+        return "Contract{" +
+                "id='" + this.id() + '\'' +
+                ", label='" + this.label + '\'' +
+                ", amount=" + this.amount +
+                ", startDate=" + this.startDate +
+                ", started=" + this.isStarted() +
+                '}';
     }
 }
 
-class Control extends BaseModel {
-    private String controlledBy;
-    private int priority;
-    private boolean isActive;
+static class Control extends BaseModel {
+    public String controlledBy;
+    public int priority;
+    public boolean isActive;
 
-    public Control(String controlledBy, int priority, boolean isActive) {
+    public Control(int id, String controlledBy, int priority, boolean isActive) {
+        super(id);
         this.controlledBy = controlledBy;
         this.priority = priority;
         this.isActive = isActive;
-    }
-
-    public String getControlledBy() {
-        return this.controlledBy;
-    }
-
-    public void setControlledBy(String controlledBy) {
-        this.controlledBy = controlledBy;
     }
 
     public int getPriority() {
         return this.priority;
     }
 
-    public void setPriority(int priority) {
-        this.priority = priority;
-    }
-
-    public boolean isActive() {
-        return this.isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
-    }
-
     @Override
-    public void displayInfo() {
-        System.out.println("Control ID: " + this.getControlledBy());
-        System.out.println("Priority: " + this.getPriority());
-        System.out.println("Active: " + this.isActive());
+    public String toString() {
+        return "Control{" +
+                "id='" + super.id() + '\'' +
+                ", priority=" + this.priority +
+                ", isActive=" + this.isActive +
+                ", status=" + this.controlStatus() +
+                '}';
     }
 
     public String controlStatus() {
         return this.isActive ? "Control is active" : "Control is inactive";
     }
-
-    public void activateControl() {
-        this.isActive = true;
-        System.out.println("Control activated");
-    }
 }
 
-class Country extends BaseModel {
-    private String name;
-    private int population;
-    private double area;
+static class Country extends BaseModel {
+    public String name;
+    public int population;
+    public double area;
 
-    public Country(String name, int population, double area) {
+    public Country(int id, String name, int population, double area) {
+        super(id);
         this.name = name;
         this.population = population;
         this.area = area;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public int getPopulation() {
         return this.population;
     }
 
-    public void setPopulation(int population) {
-        this.population = population;
-    }
-
-    public double getArea() {
-        return this.area;
-    }
-
-    public void setArea(double area) {
-        this.area = area;
-    }
-
     @Override
-    public void displayInfo() {
-        System.out.println("Country Name: " + this.getName());
-        System.out.println("Population: " + this.getPopulation());
-        System.out.println("Area: " + this.getArea() + " sq km");
-        System.out.println("Density: " + this.populationDensity());
+    public String toString() {
+        return "Country{" +
+                "id='" + super.id() + '\'' +
+                ", name='" + this.name + '\'' +
+                ", population=" + this.population +
+                ", area=" + this.area +
+                ", density=" + this.getPopulationDensity() +
+                '}';
     }
 
-    public double populationDensity() {
-        return this.getPopulation() / this.getArea();
+    public double getPopulationDensity() {
+        return this.population / this.area;
     }
 
-    public void increasePopulation(int additionalPopulation) {
-        this.population += additionalPopulation;
-        System.out.println("Population increased by " + additionalPopulation);
-    }
+}
+
+class Supplier1<T> {
+
 }
 
 class Utils {
-    public static <T extends BaseModel> void handleInputAndFindMaxMin(
-            Supplier<T> inputSupplier,
-            Comparator<T> comparator,
-            Class<T> clazz
+    public static <M extends BaseModel> void handleInputAndFindMaxMin(
+            Supplier<M> inputSupplier,
+            Comparator<M> comparator,
+            Class<M> clazz
     ) {
         Scanner scanner = new Scanner(System.in);
 
@@ -183,7 +137,7 @@ class Utils {
         T[] elements = (T[]) Array.newInstance(clazz, count);
 
         for (int i = 0; i < count; i++) {
-            elements[i] = inputSupplier.get();
+            elements[i] = inputSupplier(i);
         }
 
         T maxElement = findMax(elements, comparator);
@@ -191,14 +145,14 @@ class Utils {
 
         System.out.println("\nElements Information:");
         for (T element : elements) {
-            element.displayInfo();
+            System.out.println(element.toString());
         }
 
         System.out.println("\nElement with max value:");
-        maxElement.displayInfo();
+        System.out.println(maxElement.toString());
 
         System.out.println("\nElement with min value:");
-        minElement.displayInfo();
+        System.out.println(minElement.toString());
     }
 
     public static <T> T findMax(T[] array, Comparator<T> comparator) {
@@ -246,7 +200,7 @@ public class Main2 {
 
     }
 
-    private static Contract inputContract() {
+    private static Contract inputContract(int id) {
         Scanner scanner = new Scanner(System.in);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -265,10 +219,10 @@ public class Main2 {
             System.exit(1);
         }
 
-        return new Contract(label, amount, startDate);
+        return new Contract(id, label, amount, startDate);
     }
 
-    private static Control inputControl() {
+    private static Control inputControl(int id) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter Control ID:");
@@ -279,10 +233,10 @@ public class Main2 {
         boolean isActive = scanner.nextBoolean();
         scanner.nextLine(); // Consume newline
 
-        return new Control(controlId, priority, isActive);
+        return new Control(id, controlId, priority, isActive);
     }
 
-    private static Country inputCountry() {
+    private static Country inputCountry(int id) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter Country Name:");
@@ -293,6 +247,6 @@ public class Main2 {
         double area = scanner.nextDouble();
         scanner.nextLine();
 
-        return new Country(name, population, area);
+        return new Country(id, name, population, area);
     }
 }
