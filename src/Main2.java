@@ -4,10 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.Comparator;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-abstract static class BaseModel {
+abstract class BaseModel {
     private final int id;
 
     public int id() {
@@ -21,7 +20,7 @@ abstract static class BaseModel {
     public abstract String toString();
 }
 
-static class Contract extends BaseModel {
+ class Contract extends BaseModel {
     public String label;
     public double amount;
     public Date startDate;
@@ -53,7 +52,7 @@ static class Contract extends BaseModel {
     }
 }
 
-static class Control extends BaseModel {
+ class Control extends BaseModel {
     public String controlledBy;
     public int priority;
     public boolean isActive;
@@ -84,7 +83,7 @@ static class Control extends BaseModel {
     }
 }
 
-static class Country extends BaseModel {
+ class Country extends BaseModel {
     public String name;
     public int population;
     public double area;
@@ -117,15 +116,11 @@ static class Country extends BaseModel {
 
 }
 
-class Supplier1<T> {
-
-}
-
 class Utils {
-    public static <M extends BaseModel> void handleInputAndFindMaxMin(
-            Supplier<M> inputSupplier,
-            Comparator<M> comparator,
-            Class<M> clazz
+    public static <T extends BaseModel> void handleInputAndFindMaxMin(
+            Supplier<T> inputSupplier,
+            Comparator<T> comparator,
+            Class<T> clazz
     ) {
         Scanner scanner = new Scanner(System.in);
 
@@ -137,7 +132,7 @@ class Utils {
         T[] elements = (T[]) Array.newInstance(clazz, count);
 
         for (int i = 0; i < count; i++) {
-            elements[i] = inputSupplier(i);
+            elements[i] = inputSupplier.get();
         }
 
         T maxElement = findMax(elements, comparator);
@@ -200,10 +195,13 @@ public class Main2 {
 
     }
 
-    private static Contract inputContract(int id) {
+    private static Contract inputContract() {
         Scanner scanner = new Scanner(System.in);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
+
+        System.out.println("Enter ID:");
+        int id = scanner.nextInt();
         System.out.println("Enter Contract label:");
         String label = scanner.nextLine();
         System.out.println("Enter Amount:");
@@ -222,8 +220,11 @@ public class Main2 {
         return new Contract(id, label, amount, startDate);
     }
 
-    private static Control inputControl(int id) {
+    private static Control inputControl() {
         Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter ID:");
+        int id = scanner.nextInt();
 
         System.out.println("Enter Control ID:");
         String controlId = scanner.nextLine();
@@ -236,9 +237,11 @@ public class Main2 {
         return new Control(id, controlId, priority, isActive);
     }
 
-    private static Country inputCountry(int id) {
+    private static Country inputCountry() {
         Scanner scanner = new Scanner(System.in);
 
+        System.out.println("Enter ID:");
+        int id = scanner.nextInt();
         System.out.println("Enter Country Name:");
         String name = scanner.nextLine();
         System.out.println("Enter Population:");
