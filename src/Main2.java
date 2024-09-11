@@ -1,12 +1,13 @@
+import java.io.*;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Scanner;
-import java.util.Comparator;
 import java.util.function.Supplier;
 
-abstract class BaseModel {
+abstract class BaseModel implements Serializable {
     private final int id;
 
     public int id() {
@@ -20,7 +21,7 @@ abstract class BaseModel {
     public abstract String toString();
 }
 
- class Contract extends BaseModel {
+class Contract extends BaseModel {
     public String label;
     public double amount;
     public Date startDate;
@@ -52,7 +53,7 @@ abstract class BaseModel {
     }
 }
 
- class Control extends BaseModel {
+class Control extends BaseModel {
     public String controlledBy;
     public int priority;
     public boolean isActive;
@@ -83,7 +84,7 @@ abstract class BaseModel {
     }
 }
 
- class Country extends BaseModel {
+class Country extends BaseModel {
     public String name;
     public int population;
     public double area;
@@ -120,7 +121,8 @@ class Utils {
     public static <T extends BaseModel> void handleInputAndFindMaxMin(
             Supplier<T> inputSupplier,
             Comparator<T> comparator,
-            Class<T> clazz
+            Class<T> clazz,
+            String fileName
     ) {
         Scanner scanner = new Scanner(System.in);
 
@@ -148,6 +150,84 @@ class Utils {
 
         System.out.println("\nElement with min value:");
         System.out.println(minElement.toString());
+
+        byte[] byteArray = serializeObjectsToByteArray(elements);
+
+        try (PushbackInputStream pbis = new PushbackInputStream(new ByteArrayInputStream(byteArray))) {
+            int firstByte = pbis.read();
+            pbis.unread(firstByte);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(fileName + ".bin");
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
+             SequenceInputStream sis = new SequenceInputStream(bais, bais)) {
+
+            int data;
+            while ((data = sis.read()) != -1) {
+                bos.write(data);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        byte[] fileContent = readFileToByteArray(fileName + ".bin");
+
+        T[] readElements = deserializeObjectsFromByteArray(fileContent, clazz);
+
+        System.out.println("\nRead elements from file:");
+        for (T element : readElements) {
+            System.out.println(element.toString());
+        }
+
+        try (PrintStream ps = new PrintStream(new FileOutputStream("2_" + fileName + ".txt"))) {
+            ps.println("Max Element:");
+            ps.println(maxElement);
+            ps.println("Min Element:");
+            ps.println(minElement);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static <T extends BaseModel> byte[] serializeObjectsToByteArray(T[] objects) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(objects);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static byte[] readFileToByteArray(String fileName) {
+        try (FileInputStream fis = new FileInputStream(fileName);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int data;
+            while ((data = fis.read()) != -1) {
+                baos.write(data);
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static <T extends BaseModel> T[] deserializeObjectsFromByteArray(byte[] byteArray, Class<T> clazz) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+            @SuppressWarnings("unchecked")
+            T[] objects = (T[]) ois.readObject();
+            return objects;
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public static <T> T findMax(T[] array, Comparator<T> comparator) {
@@ -171,26 +251,30 @@ class Utils {
     }
 }
 
-
 public class Main2 {
 
     public static void main(String[] args) {
         Utils.handleInputAndFindMaxMin(
                 Main2::inputContract,
                 Comparator.comparingDouble(Contract::getAmount),
-                Contract.class
+                Contract.class,
+                "contracts"
         );
 
         Utils.handleInputAndFindMaxMin(
                 Main2::inputControl,
                 Comparator.comparingInt(Control::getPriority),
-                Control.class
+                Control.class,
+                "controls"
+
         );
 
         Utils.handleInputAndFindMaxMin(
                 Main2::inputCountry,
                 Comparator.comparingInt(Country::getPopulation),
-                Country.class
+                Country.class,
+                "countries"
+
         );
 
     }
@@ -202,12 +286,13 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
+        scanner.nextLine();
         System.out.println("Enter Contract label:");
         String label = scanner.nextLine();
         System.out.println("Enter Amount:");
         double amount = scanner.nextDouble();
         System.out.println("Enter Start Date (yyyy-MM-dd):");
-        scanner.nextLine(); // Consume newline
+        scanner.nextLine();
         String dateString = scanner.nextLine();
         Date startDate = null;
         try {
@@ -225,14 +310,14 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
-
+        scanner.nextLine();
         System.out.println("Enter Control ID:");
         String controlId = scanner.nextLine();
         System.out.println("Enter Priority:");
         int priority = scanner.nextInt();
         System.out.println("Is Active (true/false):");
         boolean isActive = scanner.nextBoolean();
-        scanner.nextLine(); // Consume newline
+        scanner.nextLine();
 
         return new Control(id, controlId, priority, isActive);
     }
@@ -242,6 +327,8 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
+        scanner.nextLine();
+
         System.out.println("Enter Country Name:");
         String name = scanner.nextLine();
         System.out.println("Enter Population:");
