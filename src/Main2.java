@@ -2,9 +2,7 @@ import java.io.*;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Scanner;
+import java.util.*;
 import java.util.function.Supplier;
 
 abstract class BaseModel implements Serializable {
@@ -117,12 +115,129 @@ class Country extends BaseModel {
 
 }
 
+abstract class FileOperator<T extends BaseModel> {
+    protected String fileName;
+
+    public FileOperator(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public abstract void write(T[] elements);
+
+    public abstract T[] read();
+}
+
+class ByteFileOperator<T extends BaseModel> extends FileOperator<T> {
+    public ByteFileOperator(String fileName) {
+        super(fileName);
+    }
+
+    private static <T extends BaseModel> byte[] serializeObjectsToByteArray(T[] objects) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(objects);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static byte[] readFileToByteArray(String fileName) {
+        try (FileInputStream fis = new FileInputStream(fileName);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int data;
+            while ((data = fis.read()) != -1) {
+                baos.write(data);
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static <T extends BaseModel> T[] deserializeObjectsFromByteArray(byte[] byteArray) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+            @SuppressWarnings("unchecked")
+            T[] objects = (T[]) ois.readObject();
+            return objects;
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public void write(T[] elements) {
+        byte[] byteArray = serializeObjectsToByteArray(elements);
+
+        try (PushbackInputStream pbis = new PushbackInputStream(new ByteArrayInputStream(byteArray))) {
+            int firstByte = pbis.read();
+            pbis.unread(firstByte);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(this.fileName + ".bin");
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
+             SequenceInputStream sis = new SequenceInputStream(bais, bais)) {
+
+            int data;
+            while ((data = sis.read()) != -1) {
+                bos.write(data);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public T[] read() {
+        byte[] fileContent = readFileToByteArray(this.fileName + ".bin");
+
+        return deserializeObjectsFromByteArray(fileContent);
+    }
+}
+
+
+
+class TextFileOperator<T extends BaseModel> extends FileOperator<T> {
+    public TextFileOperator(String fileName) {
+        super(fileName);
+    }
+
+    @Override
+    public void write(T[] elements) {
+        try (ObjectOutputStream writer = new ObjectOutputStream(new FileOutputStream(fileName + ".dat"))) {
+            writer.writeObject(elements);
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public T[] read() {
+        try (ObjectInputStream reader = new ObjectInputStream(new FileInputStream(fileName + ".dat"))) {
+            return (T[]) reader.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error reading from file: " + e.getMessage());
+            return null;
+        }
+    }
+}
+
+
 class Utils {
     public static <T extends BaseModel> void handleInputAndFindMaxMin(
             Supplier<T> inputSupplier,
             Comparator<T> comparator,
             Class<T> clazz,
-            String fileName
+            FileOperator<T> fileOperator
     ) {
         Scanner scanner = new Scanner(System.in);
 
@@ -151,84 +266,16 @@ class Utils {
         System.out.println("\nElement with min value:");
         System.out.println(minElement.toString());
 
-        byte[] byteArray = serializeObjectsToByteArray(elements);
-
-        try (PushbackInputStream pbis = new PushbackInputStream(new ByteArrayInputStream(byteArray))) {
-            int firstByte = pbis.read();
-            pbis.unread(firstByte);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try (FileOutputStream fos = new FileOutputStream(fileName + ".bin");
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
-             SequenceInputStream sis = new SequenceInputStream(bais, bais)) {
-
-            int data;
-            while ((data = sis.read()) != -1) {
-                bos.write(data);
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        byte[] fileContent = readFileToByteArray(fileName + ".bin");
-
-        T[] readElements = deserializeObjectsFromByteArray(fileContent, clazz);
+        fileOperator.write(elements);
+        T[] readElements = fileOperator.read();
 
         System.out.println("\nRead elements from file:");
         for (T element : readElements) {
             System.out.println(element.toString());
         }
-
-        try (PrintStream ps = new PrintStream(new FileOutputStream("2_" + fileName + ".txt"))) {
-            ps.println("Max Element:");
-            ps.println(maxElement);
-            ps.println("Min Element:");
-            ps.println(minElement);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    private static <T extends BaseModel> byte[] serializeObjectsToByteArray(T[] objects) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-            oos.writeObject(objects);
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
-    private static byte[] readFileToByteArray(String fileName) {
-        try (FileInputStream fis = new FileInputStream(fileName);
-             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            int data;
-            while ((data = fis.read()) != -1) {
-                baos.write(data);
-            }
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static <T extends BaseModel> T[] deserializeObjectsFromByteArray(byte[] byteArray, Class<T> clazz) {
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
-             ObjectInputStream ois = new ObjectInputStream(bais)) {
-            @SuppressWarnings("unchecked")
-            T[] objects = (T[]) ois.readObject();
-            return objects;
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     public static <T> T findMax(T[] array, Comparator<T> comparator) {
         T max = array[0];
@@ -251,21 +298,25 @@ class Utils {
     }
 }
 
+
+
 public class Main2 {
 
     public static void main(String[] args) {
+
+
         Utils.handleInputAndFindMaxMin(
                 Main2::inputContract,
                 Comparator.comparingDouble(Contract::getAmount),
                 Contract.class,
-                "contracts"
+                new TextFileOperator<>("contracts")
         );
 
         Utils.handleInputAndFindMaxMin(
                 Main2::inputControl,
                 Comparator.comparingInt(Control::getPriority),
                 Control.class,
-                "controls"
+                new ByteFileOperator<>("controls")
 
         );
 
@@ -273,7 +324,7 @@ public class Main2 {
                 Main2::inputCountry,
                 Comparator.comparingInt(Country::getPopulation),
                 Country.class,
-                "countries"
+                new ByteFileOperator<>("countries")
 
         );
 
