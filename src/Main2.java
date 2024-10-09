@@ -6,24 +6,33 @@ import java.util.Scanner;
 import java.util.Comparator;
 import java.util.function.Supplier;
 
-abstract class BaseModel {
-    private final int id;
+interface getId {
+    public int id();
+}
 
-    public int id() {
-        return this.id;
-    }
+abstract class BaseModel {
+    protected int id;
 
     public BaseModel(int id) {
         this.id = id;
     }
 
+    public BaseModel() {
+        this.id = -1;
+    }
+
     public abstract String toString();
 }
 
- class Contract extends BaseModel {
+ class Contract extends BaseModel implements getId {
     public String label;
     public double amount;
     public Date startDate;
+
+     @Override
+     public int id() {
+         return this.id;
+     }
 
     public Contract(int id, String label, double amount, Date startDate) {
         super(id);
@@ -52,7 +61,7 @@ abstract class BaseModel {
     }
 }
 
- class Control extends BaseModel {
+ class Control extends BaseModel implements getId {
     public String controlledBy;
     public int priority;
     public boolean isActive;
@@ -64,6 +73,11 @@ abstract class BaseModel {
         this.isActive = isActive;
     }
 
+     @Override
+     public int id() {
+         return this.id;
+     }
+
     public int getPriority() {
         return this.priority;
     }
@@ -71,7 +85,7 @@ abstract class BaseModel {
     @Override
     public String toString() {
         return "Control{" +
-                "id='" + super.id() + '\'' +
+                "id='" + this.id() + '\'' +
                 ", priority=" + this.priority +
                 ", isActive=" + this.isActive +
                 ", status=" + this.controlStatus() +
@@ -83,7 +97,7 @@ abstract class BaseModel {
     }
 }
 
- class Country extends BaseModel {
+ class Country extends BaseModel implements getId {
     public String name;
     public int population;
     public double area;
@@ -99,10 +113,15 @@ abstract class BaseModel {
         return this.population;
     }
 
+     @Override
+     public int id() {
+         return this.id;
+     }
+
     @Override
     public String toString() {
         return "Country{" +
-                "id='" + super.id() + '\'' +
+                "id='" + this.id() + '\'' +
                 ", name='" + this.name + '\'' +
                 ", population=" + this.population +
                 ", area=" + this.area +
@@ -202,6 +221,8 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
+        scanner.nextLine();
+
         System.out.println("Enter Contract label:");
         String label = scanner.nextLine();
         System.out.println("Enter Amount:");
@@ -225,6 +246,7 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
+        scanner.nextLine();
 
         System.out.println("Enter Control ID:");
         String controlId = scanner.nextLine();
@@ -242,6 +264,8 @@ public class Main2 {
 
         System.out.println("Enter ID:");
         int id = scanner.nextInt();
+        scanner.nextLine();
+
         System.out.println("Enter Country Name:");
         String name = scanner.nextLine();
         System.out.println("Enter Population:");
