@@ -1,28 +1,38 @@
 import java.io.*;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
 
-abstract class BaseModel implements Serializable {
-    private final int id;
+interface getId {
+    public int id();
+}
 
-    public int id() {
-        return this.id;
-    }
+abstract class BaseModel implements Serializable {
+    protected int id;
 
     public BaseModel(int id) {
         this.id = id;
     }
 
+    public BaseModel() {
+        this.id = -1;
+    }
+
     public abstract String toString();
 }
 
-class Contract extends BaseModel {
+ class Contract extends BaseModel implements getId {
     public String label;
     public double amount;
     public Date startDate;
+
+     @Override
+     public int id() {
+         return this.id;
+     }
 
     public Contract(int id, String label, double amount, Date startDate) {
         super(id);
@@ -51,7 +61,7 @@ class Contract extends BaseModel {
     }
 }
 
-class Control extends BaseModel {
+ class Control extends BaseModel implements getId {
     public String controlledBy;
     public int priority;
     public boolean isActive;
@@ -63,6 +73,11 @@ class Control extends BaseModel {
         this.isActive = isActive;
     }
 
+     @Override
+     public int id() {
+         return this.id;
+     }
+
     public int getPriority() {
         return this.priority;
     }
@@ -70,7 +85,7 @@ class Control extends BaseModel {
     @Override
     public String toString() {
         return "Control{" +
-                "id='" + super.id() + '\'' +
+                "id='" + this.id() + '\'' +
                 ", priority=" + this.priority +
                 ", isActive=" + this.isActive +
                 ", status=" + this.controlStatus() +
@@ -82,7 +97,7 @@ class Control extends BaseModel {
     }
 }
 
-class Country extends BaseModel {
+ class Country extends BaseModel implements getId {
     public String name;
     public int population;
     public double area;
@@ -98,10 +113,15 @@ class Country extends BaseModel {
         return this.population;
     }
 
+     @Override
+     public int id() {
+         return this.id;
+     }
+
     @Override
     public String toString() {
         return "Country{" +
-                "id='" + super.id() + '\'' +
+                "id='" + this.id() + '\'' +
                 ", name='" + this.name + '\'' +
                 ", population=" + this.population +
                 ", area=" + this.area +
