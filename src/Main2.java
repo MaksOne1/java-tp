@@ -202,11 +202,10 @@ class ByteFileOperator<T extends BaseModel> extends FileOperator<T> {
 
         try (FileOutputStream fos = new FileOutputStream(this.fileName + ".bin");
              BufferedOutputStream bos = new BufferedOutputStream(fos);
-             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray);
-             SequenceInputStream sis = new SequenceInputStream(bais, bais)) {
+             ByteArrayInputStream bais = new ByteArrayInputStream(byteArray)) {
 
             int data;
-            while ((data = sis.read()) != -1) {
+            while ((data = bais.read()) != -1) {
                 bos.write(data);
             }
 
